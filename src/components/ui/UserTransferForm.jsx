@@ -86,15 +86,60 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
   const handleOtpVerify = async (e) => {
     e.preventDefault();
     setLoading(true);
+  
     const enteredOtp = getTypedOtp();
     const storedOtp = localStorage.getItem(otpKey);
-
-    if (enteredOtp === storedOtp) {
-      toast.success("OTP Verified Successfully!");
-      setShowForm(false); // hide the form
-setOtpSent(false); // hide the OTP modal
-setShowSuccessModal(true); 
-onClose(); 
+    const transferAmount = parseFloat(formData.amount);
+    const transferKey = `transferCount_${userData.id}`;
+    const currentCount = parseInt(localStorage.getItem(transferKey) || "0");
+  
+    if (enteredOtp !== storedOtp) {
+      setFormState({
+        status: "error",
+        errorMessage: "Invalid OTP. Please try again.",
+      });
+      setShowErrorModal(true);
+      setOtpSent(false);
+      setLoading(false);
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Authentication token not found");
+  
+      // Call backend API to simulate transfer
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_SERVER_NAME}transactions/simulate`,
+        {
+          amount: transferAmount,
+          recipientName: formData.recipientName,
+          accountNumber: formData.accountNumber,
+          description: formData.description,
+          currency: formData.currency,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      // Update local balance with new value from server
+      setBalance(res.data.newBalance);
+  
+      // Update transfer count
+      if (currentCount < 5) {
+        localStorage.setItem(transferKey, (currentCount + 1).toString());
+      }
+  
+      // Reset and show success
+      toast.success("Transfer successful!");
+      setShowForm(false);
+      setOtpSent(false);
+      setShowSuccessModal(true);
+      onClose();
+  
       setFormData({
         accountNumber: "",
         recipientName: "",
@@ -103,21 +148,26 @@ onClose();
         currency: "USD",
         otp: "",
       });
+  
       setTimeout(() => {
         setShowSuccessModal(false);
-        onComplete(); // This tells the parent to hide the whole modal (including "Send Money")
-      }, 5000);
-    } else {
+        onComplete();
+      }, 2000);
+      setTimeout(() => {
+        window.location.reload(); // simple but brute-force
+      }, 2000);
+    } catch (error) {
+      console.error(error);
       setFormState({
         status: "error",
-        errorMessage: "Invalid OTP. Please try again.",
+        errorMessage: error.response?.data?.message || "Transfer failed. Try again.",
       });
       setShowErrorModal(true);
-      setOtpSent(false);
+    } finally {
       setLoading(false);
     }
   };
-
+  
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setFormState({ status: "loading", errorMessage: "" });
@@ -302,7 +352,7 @@ onClose();
                 </p>
               </div>
 
-              <div className="w-24">
+              {/* <div className="w-24">
                 <label
                   htmlFor="currency"
                   className="block text-sm font-medium mb-1"
@@ -317,7 +367,7 @@ onClose();
                 >
                   <option value="USD">USD</option>
                 </select>
-              </div>
+              </div> */}
             </div>
 
             <div>

@@ -280,7 +280,7 @@ export default function PropeneerTransactions() {
                       onClick={() => requestSort("amount")}
                     >
                       <div className="flex items-center gap-1">
-                        Amount (€)
+                        Amount ($)
                         {sortConfig.key === "amount" && (
                           sortConfig.direction === "asc" ? (
                             <ChevronUp size={14} />
@@ -343,7 +343,7 @@ export default function PropeneerTransactions() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          €{transaction.amount.toFixed(2)}
+                          ${transaction.amount.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span

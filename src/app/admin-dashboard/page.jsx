@@ -21,7 +21,7 @@ export default function PropeneerDashboard() {
   const [loading, setLoading] = useState(true);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [accountStats, setAccountStats] = useState({
-    totalBalance: "€3,458,950",
+    totalBalance: "$3,458,950",
     monthlyGrowth: "12.4%",
     pendingApprovals: 8,
   });
