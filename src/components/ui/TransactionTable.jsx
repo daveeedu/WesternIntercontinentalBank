@@ -152,7 +152,12 @@ export default function TransactionTable({ transactions }) {
                         </button>
                       </div>
                     </td>
-                 
+                    {/* <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+  {txn.receiver ? `${txn.receiver.firstName} ${txn.receiver.lastName}` : 'N/A'}
+</div>
+
+                    </td> */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">${(txn.amount || 0).toLocaleString()}</div>
                     </td>
@@ -195,7 +200,10 @@ export default function TransactionTable({ transactions }) {
                           )}
                         </button>
                       </div>
-                   
+                      <div className="text-sm text-gray-900">
+  {txn.receiver ? `${txn.receiver.firstName} ${txn.receiver.lastName}` : 'N/A'}
+</div>
+
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">

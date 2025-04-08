@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from 'next/router';
+import { usePathname } from 'next/navigation';
 import Link from "next/link";
 import {
   BarChart3,
@@ -13,8 +15,11 @@ import {
   Menu,
   X,
   MessageCircle,
+  Settings,
 } from "lucide-react";
 import axios from "axios";
+
+
 
 const PropeneerLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +29,18 @@ const PropeneerLayout = ({ children }) => {
   const getAuthToken = () => {
     return localStorage.getItem("adminToken");
   };
+
+  const currentPath = usePathname();
+  
+const isActive = (path) => currentPath === path;
+// className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary-700 bg-primary-100 border-l-4 border-primary-600 hover:bg-primary-100"
+const linkClass = (path) =>
+  `flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary-700 hover:bg-primary-100 ${
+    isActive(path)
+      ? "text-primary-700 bg-primary-100 border-l-4 border-primary-600"
+      : "text-gray-600 hover:bg-primary-100"
+  }`;
+
 
   const getPropeneer = async () => {
     try {
@@ -78,10 +95,14 @@ const PropeneerLayout = ({ children }) => {
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } transition-transform duration-300 ease-in-out overflow-y-auto`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        
+        <div className="p-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-primary-700">
-            Globalis<span className="text-primary-500">Bank</span>
+            Western Intercontinental{" "}
+            <span className="text-primary-500">Bank</span>
           </h1>
+          <p className="text-xs text-gray-500 mt-1">Online Banking</p>
+    
           <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X size={24} className="text-gray-500" />
           </button>
@@ -95,7 +116,7 @@ const PropeneerLayout = ({ children }) => {
             </div>
             <div>
               <p className="font-medium text-sm">{propeneer.username} </p>
-              <p className="text-xs text-gray-500">Propeneer Access</p>
+              <p className="text-xs text-gray-500">Admin Access</p>
             </div>
           </div>
         </div>
@@ -107,29 +128,29 @@ const PropeneerLayout = ({ children }) => {
             </p>
           </div>
           <Link
-            href="/propeneer-dashboard"
-            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary-700 bg-primary-100 border-l-4 border-primary-600"
+            href="/admin-dashboard"
+            className={linkClass("/admin-dashboard")}
           >
             <BarChart3 size={18} />
             <span>Dashboard</span>
           </Link>
           <Link
-            href="/propeneer-users"
-            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-primary-100"
+            href="/admin-users"
+            className={linkClass("/admin-users")}
           >
             <Users size={18} />
             <span>Users</span>
           </Link>
           <Link
-            href="/propeneer-transactions"
-            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-primary-100"
+            href="/admin-transactions"
+            className={linkClass("/admin-transactions")}
           >
             <ArrowUpDown size={18} />
             <span>Transactions</span>
           </Link>
           <Link
-            href="/propeneer-messages"
-            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-primary-100"
+            href="/admin-messages"
+            className={linkClass("/admin-messages")}
           >
             <MessageCircle size={18} />
             <span>Messages</span>
@@ -141,11 +162,11 @@ const PropeneerLayout = ({ children }) => {
             </p>
           </div>
           <Link
-            href="/propeneer-dasboard"
-            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-primary-100"
+            href="/admin-settings"
+            className={linkClass("/propeneer-settings")}
           >
-            <Wallet size={18} />
-            <span>Banking Settings</span>
+            <Settings size={18} />
+            <span>Admin Settings</span>
           </Link>
         </nav>
       </div>
@@ -163,7 +184,7 @@ const PropeneerLayout = ({ children }) => {
                 <Menu size={24} className="text-gray-700" />
               </button>
               <h2 className="text-lg sm:text-xl font-semibold text-gray-800 truncate">
-                Propeneer Dashboard
+                Admin Dashboard
               </h2>
             </div>
             <div className="flex items-center gap-2 sm:gap-6">
