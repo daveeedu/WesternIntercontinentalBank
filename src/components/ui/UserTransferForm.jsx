@@ -8,6 +8,7 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
   const [formData, setFormData] = useState({
     accountNumber: "",
     recipientName: "",
+    bankName: "",
     amount: "",
     description: "",
     currency: "USD",
@@ -32,6 +33,7 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
   const [correctOtp, setCorrectOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(true);
+  
 
 
   const generateOtp = async () => {
@@ -86,7 +88,7 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
   const handleOtpVerify = async (e) => {
     e.preventDefault();
     setLoading(true);
-  
+
     const enteredOtp = getTypedOtp();
     const storedOtp = localStorage.getItem(otpKey);
     const transferAmount = parseFloat(formData.amount);
@@ -115,6 +117,7 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
           amount: transferAmount,
           recipientName: formData.recipientName,
           accountNumber: formData.accountNumber,
+          bankName: formData.bankName,
           description: formData.description,
           currency: formData.currency,
         },
@@ -129,7 +132,7 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
       setBalance(res.data.newBalance);
   
       // Update transfer count
-      if (currentCount < 5) {
+      if (currentCount < 3) {
         localStorage.setItem(transferKey, (currentCount + 1).toString());
       }
   
@@ -138,21 +141,22 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
       setShowForm(false);
       setOtpSent(false);
       setShowSuccessModal(true);
-      onClose();
+      // onClose();
   
       setFormData({
         accountNumber: "",
         recipientName: "",
+        bankName: "",
         amount: "",
         description: "",
         currency: "USD",
         otp: "",
       });
   
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        onComplete();
-      }, 2000);
+      // setTimeout(() => {
+      //   setShowSuccessModal(false);
+      //   onComplete();
+
       setTimeout(() => {
         window.location.reload(); // simple but brute-force
       }, 2000);
@@ -172,21 +176,40 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
     if (e) e.preventDefault();
     setFormState({ status: "loading", errorMessage: "" });
     setLoading(true);
-
+  
     const transferAmount = parseFloat(formData.amount);
+    const transferKey = `transferCount_${userData.id}`;
+    const attemptKey = `transferAttemptCount_${userData.id}`;
+  
     const currentCount = parseInt(localStorage.getItem(transferKey) || "0");
-
-    // Check transfer limits
+    const currentAttemptCount = parseInt(localStorage.getItem(attemptKey) || "0");
+  
+    // ✅ Check transfer limits
     if (currentCount >= 3) {
-      setFormState({
-        status: "error",
-        errorMessage: "Transfer limit reached. Contact customer care.",
-      });
-      setShowErrorModal(true);
-      setLoading(false);
-      return;
+      const newAttempt = currentAttemptCount + 1;
+      localStorage.setItem(attemptKey, newAttempt.toString());
+  
+      if (newAttempt === 1) {
+        setFormState({
+          status: "error",
+          errorMessage: "Transfer limit reached. Contact customer care.",
+        });
+        setShowErrorModal(true);
+        setLoading(false);
+        return;
+      }
+  
+      if (newAttempt >= 2) {
+        setFormState({
+          status: "error",
+          errorMessage: "Account suspended due to multiple transfers. Please contact customer care.",
+        });
+        // setShowAccountBannedModal(true);
+        setLoading(false);
+        return;
+      }
     }
-
+  
     if (!validateAccountNumber(formData.accountNumber)) {
       setFormState({
         status: "error",
@@ -195,7 +218,7 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
       setLoading(false);
       return;
     }
-
+  
     if (!validateAmount(formData.amount)) {
       setFormState({
         status: "error",
@@ -204,7 +227,7 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
       setLoading(false);
       return;
     }
-
+  
     if (transferAmount > balance) {
       setFormState({
         status: "error",
@@ -213,268 +236,265 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
       setLoading(false);
       return;
     }
-
-    // Show loading while OTP is being generated
-    await generateOtp(); // Generate and send the OTP
-    setLoading(false); // Set loading to false after sending OTP
-
-    // Hide the form after OTP is sent
+  
+    await generateOtp(); // Generate and show OTP modal
+    setLoading(false);
+  
     if (otpSent) {
       setFormState({ status: "idle", errorMessage: "" });
     }
   };
+  
 
-  return (
-    <>
-      <ToastContainer />
-      {showSuccessModal && (
-        <div className="fixed inset-0 flex z-10 items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center relative">
-            <CheckCircle size={50} className="text-green-500 mx-auto" />
-            <p className="text-lg font-semibold mt-4 text-gray-900">
-              Transfer Successful!
-            </p>
-            <p className="text-sm text-gray-500">
-              Your funds have been transferred successfully.
-            </p>
-            <button
-              onClick={() => {
-                setShowSuccessModal(false);
-                // Clear the form data here as well, in case it wasn't done in handleOtpVerify
-                setFormData({
-                  accountNumber: "",
-                  recipientName: "",
-                  amount: "",
-                  description: "",
-                  currency: "USD",
-                  otp: "",
-                });
-              }}
-              className="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
-            >
-              OK
-            </button>
-          </div>
+return (
+  <>
+    <ToastContainer />
+
+    {/* Success Modal */}
+    {showSuccessModal && (
+      <div className="fixed inset-0 flex z-10 items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg text-center relative">
+          <CheckCircle size={50} className="text-green-500 mx-auto" />
+          <p className="text-lg font-semibold mt-4 text-gray-900">
+            Transfer Successful!
+          </p>
+          <p className="text-sm text-gray-500">
+            Your funds have been transferred successfully.
+          </p>
+          <button
+            onClick={() => {
+              setShowSuccessModal(false);
+              setFormData({
+                accountNumber: "",
+                recipientName: "",
+                bankName: "",
+                amount: "",
+                description: "",
+                currency: "USD",
+                otp: "",
+              });
+            }}
+            className="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+          >
+            OK
+          </button>
         </div>
-      )}
+      </div>
+    )}
 
-      {/* Error Modal */}
-      {showErrorModal && (
-        <div className="fixed inset-0 z-10 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-            <AlertCircle size={40} className="text-red-500 mx-auto" />
-            <p className="text-lg font-semibold mt-4">Transaction Failed!</p>
-            <p className="text-sm text-gray-500">{formState.errorMessage}</p>
-            <p className="text-lg font-semibold mt-4">Transaction Failed.</p>
-            <p className="text-sm text-gray-500">
-              Couldn't process transaction. Please contact customer care.
-            </p>
-            <button
-              onClick={() => setShowErrorModal(false)}
-              className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
-            >
-              OK
-            </button>
-          </div>
+    {/* Error Modal */}
+    {showErrorModal && (
+      <div className="fixed inset-0 z-10 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+          <AlertCircle size={40} className="text-red-500 mx-auto" />
+          <p className="text-lg font-semibold mt-4">Transaction Failed!</p>
+          <p className="text-sm text-gray-500">{formState.errorMessage}</p>
+          <p className="text-sm text-gray-500">
+            Couldn't process transaction. Please contact customer care.
+          </p>
+          <button
+            onClick={() => setShowErrorModal(false)}
+            className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
+          >
+            OK
+          </button>
         </div>
-      )}
+      </div>
+    )}
 
-      {/* Form */}
-      {showForm && !otpSent && (
-        <form onSubmit={handleSubmit}>
-          {formState.status === "error" && (
-            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-3">
-              <AlertCircle size={18} className="text-red-500 mt-0.5" />
-              <p className="text-sm text-red-700">{formState.errorMessage}</p>
-            </div>
-          )}
-
-          <div className="space-y-4 mb-6">
-            <div>
-              <label
-                className="block text-sm font-medium mb-1"
-                htmlFor="accountNumber"
+    {/* Transfer Form */}
+    {showForm && !otpSent && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
+          <div className="p-4 md:p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Send Money</h3>
+              <button
+               onClick={() => { setShowForm(false); onClose(); }}
+                className="text-gray-400 hover:text-gray-500 text-xl"
               >
-                Account Number
-              </label>
-              <input
-                name="accountNumber"
-                value={formData.accountNumber}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter account number"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label
-                className="block text-sm font-medium mb-1"
-                htmlFor="recipientName"
-              >
-                Recipient Name
-              </label>
-              <input
-                name="recipientName"
-                value={formData.recipientName}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter recipient name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
-              />
+                &times;
+              </button>
             </div>
           </div>
 
-          <div className="space-y-4 mb-6">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label
-                  htmlFor="amount"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Amount
+          <form onSubmit={handleSubmit} className="p-4 md:p-6">
+            {formState.status === "error" && (
+              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-3">
+                <AlertCircle size={18} className="text-red-500 mt-0.5" />
+                <p className="text-sm text-red-700">{formState.errorMessage}</p>
+              </div>
+            )}
+
+            <div className="space-y-4 mb-2">
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="accountNumber">
+                  Account Number
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                  <input
-                    name="amount"
-                    type="number"
-                    value={formData.amount}
-                    onChange={handleInputChange}
-                    required
-                    inputMode="numeric" // Ensures only numeric values are entered
-                    step="1" // This ensures only whole numbers can be entered
-                    className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Available balance: {formData.currency} {balance.toFixed(2)}
-                </p>
+                <input
+                  name="accountNumber"
+                  value={formData.accountNumber}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter account number"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                />
               </div>
 
-              {/* <div className="w-24">
-                <label
-                  htmlFor="currency"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Currency
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="recipientName">
+                  Recipient Name
                 </label>
-                <select
-                  name="currency"
-                  value={formData.currency}
-                  onChange={handleInputChange}
-                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                >
-                  <option value="USD">USD</option>
-                </select>
-              </div> */}
-            </div>
-
-            <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium mb-1"
-              >
-                Description (Optional)
-              </label>
-              <input
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="What's this transfer for?"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={formState.status === "loading"}
-              className={`px-6 py-3 bg-primary-600 text-white rounded-md text-sm font-medium flex items-center gap-2 ${
-                formState.status === "loading"
-                  ? "opacity-70 cursor-not-allowed"
-                  : "hover:bg-primary-700"
-              }`}
-            >
-              {loading ? "Sending OTP..." : "Continue"}
-              <ArrowRight size={16} />
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* OTP Modal */}
-      {otpSent && (
-        <div className="fixed inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-[90%] max-w-md relative">
-            <button
-              onClick={() => setOtpSent(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
-            >
-              &times;
-            </button>
-            <h2 className="text-lg font-semibold mb-4">Enter the OTP</h2>
-            <div className="flex justify-center gap-2 mb-4">
-              {otpDigits.map((digit, index) => (
                 <input
-                  key={index}
-                  ref={(el) => (otpInputsRef.current[index] = el)}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/, "");
-                    const newDigits = [...otpDigits];
-                    newDigits[index] = value;
-                    setOtpDigits(newDigits);
-                    if (value && index < 5) {
-                      otpInputsRef.current[index + 1]?.focus();
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
-                      otpInputsRef.current[index - 1]?.focus();
-                    }
-                  }}
-                  className="w-10 h-12 text-center border border-gray-300 rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  name="recipientName"
+                  value={formData.recipientName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter recipient name"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
                 />
-              ))}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="bankName">
+                  Bank Name
+                </label>
+                <input
+                  name="bankName"
+                  value={formData.bankName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter bank name"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                />
+              </div>
             </div>
-            <button
-              onClick={handleOtpVerify}
-              className={`w-full py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition ${loading ? "cursor-wait" : ""}`}
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex justify-center items-center">
-                  <svg
-                    className="w-6 h-6 animate-spin text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4 12a8 8 0 0116 0"
-                      className="opacity-75"
+
+            <div className="space-y-4 mb-6">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label htmlFor="amount" className="block text-sm font-medium mb-1">
+                    Amount
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                    <input
+                      name="amount"
+                      type="number"
+                      value={formData.amount}
+                      onChange={handleInputChange}
+                      required
+                      inputMode="numeric"
+                      step="1"
+                      className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
                     />
-                  </svg>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Available balance: {formData.currency} {balance.toFixed(2)}
+                  </p>
                 </div>
-              ) : (
-                "Verify & Continue"
-              )}
-            </button>
-          </div>
+              </div>
+
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium mb-1">
+                  Description (Optional)
+                </label>
+                <input
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="What's this transfer for?"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={formState.status === "loading"}
+                className={`px-6 py-3 bg-primary-600 text-white rounded-md text-sm font-medium flex items-center gap-2 ${
+                  formState.status === "loading" ? "opacity-70 cursor-not-allowed" : "hover:bg-primary-700"
+                }`}
+              >
+                {loading ? "Sending OTP..." : "Continue"}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </form>
         </div>
-      )}
-    </>
-  );
+      </div>
+    )}
+
+    {/* OTP Modal */}
+    {otpSent && (
+      <div className="fixed inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg text-center w-[90%] max-w-md relative">
+          <button
+            onClick={() => setOtpSent(false)}
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+          >
+            &times;
+          </button>
+          <h2 className="text-lg font-semibold mb-4">Enter the OTP</h2>
+          <div className="flex justify-center gap-2 mb-4">
+            {otpDigits.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => (otpInputsRef.current[index] = el)}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/, "");
+                  const newDigits = [...otpDigits];
+                  newDigits[index] = value;
+                  setOtpDigits(newDigits);
+                  if (value && index < 5) {
+                    otpInputsRef.current[index + 1]?.focus();
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+                    otpInputsRef.current[index - 1]?.focus();
+                  }
+                }}
+                className="w-10 h-12 text-center border border-gray-300 rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            ))}
+          </div>
+          <button
+            onClick={handleOtpVerify}
+            className={`w-full py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition ${
+              loading ? "cursor-wait" : ""
+            }`}
+            disabled={loading}
+          >
+            {loading ? (
+              <div className="flex justify-center items-center">
+                <svg
+                  className="w-6 h-6 animate-spin text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="10" className="opacity-25" />
+                  <path d="M4 12a8 8 0 0116 0" className="opacity-75" />
+                </svg>
+              </div>
+            ) : (
+              "Verify & Continue"
+            )}
+          </button>
+        </div>
+      </div>
+    )}
+  </>
+);
+
 };
 
 export default UserTransferForm;

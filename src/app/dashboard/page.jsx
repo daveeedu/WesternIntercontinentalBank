@@ -42,6 +42,8 @@ export default function UserDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+
+
   const [firstName, setFirstName] = useState(() => {});
 
   const [quickAccounts, setQuickAccounts] = useState([
@@ -366,7 +368,7 @@ useEffect(() => {
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => setShowTransferModal(true)}
+                  onClick={() => setShowForm(true)}
                   className="flex items-center gap-2 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm font-medium"
                 >
                   <Send size={16} />
@@ -458,35 +460,15 @@ useEffect(() => {
       )}
 
       {/* Transfer Modal */}
-      {showTransferModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
-            <div className="p-4 md:p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Send Money
-                </h3>
-                <button
-                  onClick={() => setShowTransferModal(false)}
-                  className="text-gray-400 hover:text-gray-500 text-xl"
-                >
-                  &times;
-                </button>
-              </div>
-            </div>
-            <div className="p-4 md:p-6">
-              <UserTransferForm
-                userData={user}
-                onComplete={() => {
-                  setShowTransferModal(false); // closes the modal
-                }}
-                onClose={handleFormClose}
-                quickAccounts={quickAccounts}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {showForm && (
+  <UserTransferForm
+    userData={user}
+    onComplete={() => setShowTransferModal(false)}  // Ensuring onComplete also works
+    onClose={() => setShowForm(false)} // This should hide the form
+    quickAccounts={quickAccounts}
+  />
+)}
+
     </div>
   );
 }
