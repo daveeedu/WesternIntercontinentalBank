@@ -25,7 +25,7 @@ export default function ResetPasswordPage() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_NAME}propeneer/reset-password`,
+        `${process.env.NEXT_PUBLIC_SERVER_NAME}admin/reset-password`,
         {
           currentPassword,
           newPassword
@@ -38,7 +38,7 @@ export default function ResetPasswordPage() {
       );
 
       showToast("Password updated successfully", "success");
-      router.push("/propeneer/dashboard");
+      router.push("/admin/dashboard");
     } catch (error) {
       console.error("Password reset error:", error);
       showToast(
