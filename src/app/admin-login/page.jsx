@@ -24,7 +24,7 @@ export default function PropeneerLoginPage() {
     setError('');
     
     try {
-      const response = await axios.post(`${SERVER_NAME}admin/login`, data); 
+      const response = await axios.post(`${SERVER_NAME}propeneer/login`, data); 
   
       if (response.data?.token) { 
         localStorage.setItem("adminToken", response.data.token);
