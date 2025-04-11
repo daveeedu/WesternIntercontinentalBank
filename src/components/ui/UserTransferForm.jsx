@@ -176,40 +176,22 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
     if (e) e.preventDefault();
     setFormState({ status: "loading", errorMessage: "" });
     setLoading(true);
+
+    console.log("userData.verified:", userData);
+
   
-    const transferAmount = parseFloat(formData.amount);
-    const transferKey = `transferCount_${userData.id}`;
-    const attemptKey = `transferAttemptCount_${userData.id}`;
+    // 🛡 Check if user is verified
+    if (userData.fatStatus?.toLowerCase() !== "verified") {
+      setFormState({
+        status: "error",
+        errorMessage: "Account (unverified) suspended. Please contact customer care.",
+      });
+      setShowErrorModal(true);
+      setLoading(false);
+      return;
+    }    
   
-    const currentCount = parseInt(localStorage.getItem(transferKey) || "0");
-    const currentAttemptCount = parseInt(localStorage.getItem(attemptKey) || "0");
-  
-    // ✅ Check transfer limits
-    if (currentCount >= 3) {
-      const newAttempt = currentAttemptCount + 1;
-      localStorage.setItem(attemptKey, newAttempt.toString());
-  
-      if (newAttempt === 1) {
-        setFormState({
-          status: "error",
-          errorMessage: "Transfer limit reached. Contact customer care.",
-        });
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-  
-      if (newAttempt >= 2) {
-        setFormState({
-          status: "error",
-          errorMessage: "Account suspended due to multiple transfers. Please contact customer care.",
-        });
-        // setShowAccountBannedModal(true);
-        setLoading(false);
-        return;
-      }
-    }
-  
+    // ✅ Account number validation
     if (!validateAccountNumber(formData.accountNumber)) {
       setFormState({
         status: "error",
@@ -219,6 +201,7 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
       return;
     }
   
+    // ✅ Amount validation
     if (!validateAmount(formData.amount)) {
       setFormState({
         status: "error",
@@ -227,6 +210,8 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
       setLoading(false);
       return;
     }
+  
+    const transferAmount = parseFloat(formData.amount);
   
     if (transferAmount > balance) {
       setFormState({
@@ -237,7 +222,8 @@ const UserTransferForm = ({ userData, onComplete = () => {}, onClose = () => {} 
       return;
     }
   
-    await generateOtp(); // Generate and show OTP modal
+    // ✅ Generate OTP and show modal
+    await generateOtp();
     setLoading(false);
   
     if (otpSent) {
