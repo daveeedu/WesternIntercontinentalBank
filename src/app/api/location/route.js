@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export async function GET(req) {
   try {
     // Optional: log the forwarded IP
-    const forwarded = req.headers.get('x-forwarded-for');
-    console.log('Forwarded IP:', forwarded);
+    // const forwarded = req.headers.get('x-forwarded-for');
+    // console.log('Forwarded IP:', forwarded);
 
     const geoRes = await fetch('https://ipapi.co/json/');
     
