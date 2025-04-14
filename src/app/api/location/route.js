@@ -3,9 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET(req) {
   try {
     const forwarded = req.headers.get('x-forwarded-for');
-    const ip = process.env.NODE_ENV === 'development'
-      ? '102.90.80.103'
-      : forwarded?.split(',')[0] ||
+    const ip = forwarded?.split(',')[0] ||
         req.headers.get('x-real-ip') ||
         'Unknown';
 
