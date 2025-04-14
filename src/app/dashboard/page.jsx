@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import UserTransferForm from "../../components/ui/UserTransferForm";
 import TransactionTable from "../../components/ui/TransactionTable";
+import UserLocation from "../../components/ui/userLocation";
 import { showToast } from "../../components/layout/Toast";
 import {
   Home,
@@ -321,10 +322,10 @@ useEffect(() => {
               </h2>
             </div>
             <div className="flex items-center gap-6">
-              <button className="relative">
+              {/* <button className="relative">
                 <Bell size={20} className="text-gray-600" />
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"></span>
-              </button>
+              </button> */}
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium">
                   {initials}
@@ -374,11 +375,12 @@ useEffect(() => {
                   <Send size={16} />
                   <span>Send Money</span>
                 </button>
-                <button className="flex items-center gap-2 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm font-medium">
+                {/* <button className="flex items-center gap-2 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm font-medium">
                   <Download size={16} />
                   <span>Download Statement</span>
-                </button>
+                </button> */}
               </div>
+              <UserLocation />
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6 shadow-sm">
