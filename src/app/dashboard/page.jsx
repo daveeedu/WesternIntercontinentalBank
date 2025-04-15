@@ -409,7 +409,7 @@ useEffect(() => {
                     sending money faster by adding your favorite recipients.
                   </p>
                   <button
-                    onClick={() => setShowTransferModal(true)}
+                    onClick={() => setShowForm(true)}
                     className="flex items-center gap-2 text-primary-600 hover:text-primary-800 text-sm font-medium"
                   >
                     <PlusCircle size={16} />
