@@ -123,12 +123,12 @@ export default function Navbar() {
                 variant={scrolled ? 'outline' : 'primary'}
                 className="ml-4"
               >
-                Login
+                Customer Login
               </Button>
             </Link>
-            <Link href="/register">
+            {/* <Link href="/register">
               <Button variant="primary">Get Started</Button>
-            </Link>
+            </Link> */}
           </div>
 
           {/* Mobile menu button */}

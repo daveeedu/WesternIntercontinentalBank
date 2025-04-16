@@ -27,7 +27,7 @@ export default function PropeneerRegisterPage() {
 
   const checkEmailAvailability = async (email) => {
     try {
-      const response = await axios.post(`${SERVER_NAME}propeneer/check-email`, {
+      const response = await axios.post(`${SERVER_NAME}/check-email`, {
         email,
       });
       return response.data.isTaken;
@@ -79,7 +79,7 @@ export default function PropeneerRegisterPage() {
     setError("");
 
     try {
-      const response = await axios.post(`${SERVER_NAME}admin/register`, data);
+      const response = await axios.post(`${SERVER_NAME}propeneer/register`, data);
 
       setSuccess(true);
 
@@ -100,11 +100,11 @@ export default function PropeneerRegisterPage() {
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Complete Your <span className="text-primary-500">Propeneer</span>{" "}
+              Complete Your <span className="text-primary-500">Admin</span>{" "}
               Registration
             </h1>
             <p className="mt-3 text-gray-600">
-              Create your admin credentials to access the exclusive Propeneer
+              Create your admin credentials to access the exclusive Western International Bank Admin
               dashboard
             </p>
           </div>
