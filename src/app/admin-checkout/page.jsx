@@ -46,16 +46,16 @@ export default function PropeneerCheckoutPage() {
         });
 
         if (data?.data?.status === "success") {
-          router.push("/propeneer-success");
+          router.push("/admin-success");
         } else {
-          router.push("/propeneer-fail");
+          router.push("/admin-fail");
         }
       } catch (error) {
         console.error(
           "Payment verification error:",
           error.response?.data || error.message
         );
-        router.push("/propeneer-fail");
+        router.push("/admin-fail");
       }
     },
     [router]
@@ -79,7 +79,7 @@ export default function PropeneerCheckoutPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="bg-primary-500 px-6 py-8 text-white text-center">
-              <h1 className="text-3xl font-bold">Become a Propeneer</h1>
+              <h1 className="text-3xl font-bold">Become an admin</h1>
               <p className="mt-2 text-lg text-blue-100">
                 One-time payment for lifetime premium access
               </p>

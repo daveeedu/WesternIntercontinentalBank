@@ -114,7 +114,7 @@ export default function PropeneerLoginPage() {
                 </Button>
               </form>
               
-              {/* <div className="mt-6">
+               {/* <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300" />
@@ -124,17 +124,24 @@ export default function PropeneerLoginPage() {
                       Not a Propeneer yet?
                     </span>
                   </div>
-                </div>
+                </div> */}
                 
-                <div className="mt-6">
-                  <Link href="/join">
+                <div className="mt-6 flex gap-4 items-center justify-between">
+                  <Link href="/admin-register">
                     <Button variant="secondary" fullWidth>
-                      Become a Propeneer
+                      Create Admin Account
                     </Button>
                   </Link>
+                  <Link href="/register" >
+                      <Button
+                      variant='primary'
+                        
+                      >
+                        Create User Account
+                      </Button>
+                    </Link>
                 </div>
-              </div> */}
-            </div>
+              </div> 
             
             {/* <div className="mt-6 text-center">
               <Link href="/login" className="text-sm text-primary-500 hover:text-primary-600">
