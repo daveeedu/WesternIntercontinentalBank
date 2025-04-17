@@ -123,12 +123,12 @@ export default function Navbar() {
                 variant={scrolled ? 'outline' : 'primary'}
                 className="ml-4"
               >
-                Login
+                Customer Login
               </Button>
             </Link>
-            <Link href="/register">
+            {/* <Link href="/register">
               <Button variant="primary">Get Started</Button>
-            </Link>
+            </Link> */}
           </div>
 
           {/* Mobile menu button */}
@@ -193,11 +193,11 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                     className="block w-full"
                   >
-                    <Button variant="outline" className="w-full">
-                      Login
+                    <Button variant="primary" className="w-full">
+                      Customer Login
                     </Button>
                   </Link>
-                  <Link
+                  {/* <Link
                     href="/register"
                     onClick={() => setIsMenuOpen(false)}
                     className="block w-full"
@@ -205,7 +205,7 @@ export default function Navbar() {
                     <Button variant="primary" className="w-full">
                       Get Started
                     </Button>
-                  </Link>
+                  </Link> */}
                 </motion.div>
               </div>
             </motion.div>
