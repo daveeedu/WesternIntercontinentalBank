@@ -249,20 +249,25 @@ useEffect(() => {
             <Home size={18} />
             <span>Dashboard</span>
           </Link>
-          <a
-            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 cursor-pointer"
-            onClick={() => handleClick()}
+          <Link
+            href="/account"
+            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-primary-50 border-l-4 "
+            onClick={() => setSidebarOpen(false)}
           >
             <Wallet size={18} />
-            <span>Accounts</span>
-          </a>
-          <a
-            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 cursor-pointer"
-            onClick={() => handleClick()}
+           <span>Accounts</span>
+          </Link>
+         
+         
+          <Link
+            href="/cards"
+            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-primary-50 border-l-4 "
+            onClick={() => setSidebarOpen(false)}
           >
-            <CreditCard size={18} />
-            <span>Cards</span>
-          </a>
+           <CreditCard size={18} />
+           <span>Cards</span>
+          </Link>
+          {/* / */}
           {/* <Link
             href="/transfers"
             className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"

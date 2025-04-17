@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import { FloatingCustomerCareButton } from "./CustomerCare";
 
 const MainLayout = ({ children }) => {
   const pathname = usePathname();
@@ -28,7 +29,9 @@ const MainLayout = ({ children }) => {
     <div className="min-h-screen flex flex-col">
       {!isAuthPage && <Navbar />}
 
-      <main className="flex-grow ">{children}</main>
+      <main className="flex-grow ">{children}
+      <FloatingCustomerCareButton />
+      </main>
 
       {!isAuthPage && <Footer />}
     </div>
