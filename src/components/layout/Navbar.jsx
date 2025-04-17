@@ -194,11 +194,11 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                     className="block w-full"
                   >
-                    <Button variant="outline" className="w-full">
-                      Login
+                    <Button variant="primary" className="w-full">
+                      Customer Login
                     </Button>
                   </Link>
-                  <Link
+                  {/* <Link
                     href="/register"
                     onClick={() => setIsMenuOpen(false)}
                     className="block w-full"
@@ -206,7 +206,7 @@ export default function Navbar() {
                     <Button variant="primary" className="w-full">
                       Get Started
                     </Button>
-                  </Link>
+                  </Link> */}
                 </motion.div>
               </div>
             </motion.div>
