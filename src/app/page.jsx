@@ -96,20 +96,20 @@ export default function Home() {
         className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center md:justify-start"
         variants={fadeInUp}
       >
-        <Link href="/register" className="w-full sm:w-auto">
+        {/* <Link href="/register" className="w-full sm:w-auto">
           <Button
           
             className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-3 rounded-[18px] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-[#] text-white"
           >
             Get Started 
           </Button>
-        </Link>
+        </Link> */}
         <Link href="/login" className="w-full sm:w-auto">
           <Button
             variant="tertiary, primary, secondary"
             className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-3 rounded-[18px] border border-primary-500 hover:border-primary-500 bg-tertiary hover:bg-primary-600 text-white transition-all duration-300"
           >
-            Existing Customer Login
+            Customer Login
           </Button>
         </Link>
       </motion.div>

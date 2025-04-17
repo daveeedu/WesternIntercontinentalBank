@@ -93,7 +93,7 @@ export default function JoinPage() {
                 </div>
                 
                 <div className="flex flex-col space-y-4">
-                  <Link href="/propeneer-checkout">
+                  <Link href="/admin-checkout">
                     <Button variant="primary" fullWidth className="text-lg py-3">
                       Become a Propeneer
                     </Button>
