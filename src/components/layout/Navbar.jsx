@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../ui/Button';
+import { FloatingCustomerCareButton } from './CustomerCare';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -130,7 +131,7 @@ export default function Navbar() {
               <Button variant="primary">Get Started</Button>
             </Link>
           </div>
-
+             
           {/* Mobile menu button */}
           <button
             className="md:hidden flex items-center"
@@ -211,6 +212,7 @@ export default function Navbar() {
             </motion.div>
           )}
         </AnimatePresence>
+        
       </div>
     </nav>
   );
