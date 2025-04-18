@@ -41,9 +41,16 @@ export default function UserCard() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState();
-    const [user, setUser] = useState({ firstName: "John", lastName: "Doe" });
+    const [user, setUser] = useState({ firstName: "", lastName: "" });
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [initials, setInitials] = useState("JD");
+
+    const getInitials = (firstName, lastName) => {
+      const firstInitial = firstName ? firstName.charAt(0) : "";
+      const lastInitial = lastName ? lastName.charAt(0) : "";
+      return `${firstInitial}${lastInitial}`.toUpperCase(); // Convert to uppercase
+    };
+
+    const initials = getInitials(user.firstName, user.lastName);
   
     // Fetch Transactions
     const fetchTransactions = async () => {
@@ -157,13 +164,14 @@ export default function UserCard() {
             <h1 className="text-xl font-bold text-primary-700">W.I.B</h1>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative">
+            {/* <button className="relative">
               <Bell size={20} className="text-gray-600" />
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"></span>
-            </button>
-            <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium">
-              {initials}
-            </div>
+            </button> */}
+            <Link
+            href="/profile" className="w-8 h-8 cursor-pointer rounded-full bg-primary-600 flex items-center justify-center text-white font-medium">
+              <span>{initials}</span>
+            </Link>
           </div>
         </div>
 
@@ -277,11 +285,12 @@ export default function UserCard() {
             <div className="flex items-center justify-between px-6 py-4">
               <h2 className="text-xl font-semibold text-gray-800"></h2>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-medium">
-                  {initials}
-                </div>
+              <Link
+                href="/profile" className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-medium">
+                  <span>{initials}</span>
+                </Link>
                 <span className="text-sm font-medium">{user.firstName} {user.lastName}</span>
-                <ChevronDown size={16} className="text-gray-400" />
+                {/* <ChevronDown size={16} className="text-gray-400" /> */}
               </div>
             </div>
           </header>
