@@ -212,17 +212,18 @@ export default function ProfilePage() {
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <h1 className="text-xl font-bold text-primary-700">
-            W.I.B<span className="text-primary-500"></span>
+            W.I.B
           </h1>
         </div>
         <div className="flex items-center gap-4">
-          <button className="relative">
+          {/* <button className="relative">
             <Bell size={20} className="text-gray-600" />
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"></span>
-          </button>
-          <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium">
-            {getInitials(user?.firstName, user?.lastName)}
-          </div>
+          </button> */}
+          <Link
+            href="/profile" className="w-8 h-8 cursor-pointer rounded-full bg-primary-600 flex items-center justify-center text-white font-medium">
+            <span>{getInitials(user?.firstName, user?.lastName)}</span>
+          </Link>
         </div>
       </div>
 
