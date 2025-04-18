@@ -406,10 +406,10 @@ export default function ProfilePage() {
                   </h2>
                   <p className="text-sm text-gray-500">Personal Account</p>
                 </div>
-                <button className="flex items-center mr-auto gap-2 px-4 py-2 bg-primary-700 text-white rounded-md hover:bg-blue-100">
+                {/* <button className="flex items-center mr-auto gap-2 px-4 py-2 bg-primary-700 text-white rounded-md hover:bg-blue-100">
                   <Edit size={16} />
                   <span>Edit Profile</span>
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
