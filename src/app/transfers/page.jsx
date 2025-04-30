@@ -226,20 +226,22 @@ export default function History() {
             <Home size={18} />
             <span>Dashboard</span>
           </Link>
-          <a
+          <Link
+            href="/account"
             className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 cursor-pointer"
-            onClick={() => handleClick()}
+            onClick={() => setSidebarOpen(false)}
           >
             <Wallet size={18} />
             <span>Accounts</span>
-          </a>
-          <a
+          </Link>
+          <Link
+            href="/cards"
             className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 cursor-pointer"
-            onClick={() => handleClick()}
+            onClick={() => setSidebarOpen(false)}
           >
             <CreditCard size={18} />
             <span>Cards</span>
-          </a>
+          </Link>
           <Link
             href="/transfers"
             className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-700 bg-blue-50 border-l-4 border-blue-600"
