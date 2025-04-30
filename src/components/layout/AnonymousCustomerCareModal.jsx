@@ -103,21 +103,26 @@ const setupSocketConnection = (session) => {
     attemptReconnect(session);
   });
 
+
   socket.on("receiveMessage", (message) => {
-    console.log("Received message:", message);
     setMessages((prev) => {
-      // Check if we already have this message (either by ID or content+timestamp match)
       const isDuplicate = prev.some(
-        m => m._id === message._id || 
-            (m.content === message.content && 
-             Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 1000)
+        (m) =>
+          (m._id && m._id === message._id) || 
+          (m.isLocal && m.content === message.content && !m.isSupport)
       );
-      
-      // Only add if not a duplicate
-      return isDuplicate ? prev : [...prev, message];
+  
+      if (isDuplicate) return prev;
+      const cleanedPrev = prev.filter(
+        (m) => !(m.isLocal && m.content === message.content && !m.isSupport)
+      );
+  
+      return [...cleanedPrev, message];
     });
   });
+  
 };
+  
 
   const attemptReconnect = (session) => {
     if (retryTimeoutRef.current) {
@@ -150,27 +155,27 @@ const setupSocketConnection = (session) => {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !sessionId) return;
-
+  
+    const tempId = Date.now().toString();
+  
     const message = {
-      _id: Date.now().toString(),
+      _id: tempId,
       sessionId,
       content: newMessage,
       timestamp: new Date(),
       isSupport: false,
+      isLocal: true, // <-- Mark as local
     };
-
-    // Optimistic update
+  
     setMessages((prev) => [...prev, message]);
     setNewMessage("");
-
+  
     try {
-      // Save to database
       await axios.post(
         `${process.env.NEXT_PUBLIC_SERVER_NAME}anonymous/${sessionId}/send`,
         { content: newMessage }
       );
-
-      // Emit via socket if connected
+  
       if (socketRef.current?.connected) {
         socketRef.current.emit("sendMessage", {
           sessionId,
@@ -178,12 +183,13 @@ const setupSocketConnection = (session) => {
           receiverId: "propeneers",
         });
       }
+  
     } catch (error) {
       console.error("Failed to send message:", error);
-      // Revert optimistic update
-      setMessages((prev) => prev.filter((m) => m._id !== message._id));
+      setMessages((prev) => prev.filter((m) => m._id !== tempId));
     }
   };
+  
 
   // Scroll to bottom when messages change
   useEffect(() => {
