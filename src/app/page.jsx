@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
 import Button from "../components/ui/Button";
+import AnonymousFloatingButton from "../components/layout/AnonymousChatButton";
+
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
@@ -51,80 +53,73 @@ export default function Home() {
 
   return (
     <MainLayout>
+      <AnonymousFloatingButton/>
       {/* Hero Section with Advanced Parallax and Glass Morphism */}
       <section className="relative h-screen overflow-hidden bg-[#0C0C0E]">
-  {/* Background with Subtle Glow */}
-  <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0F0F12] to-[#14141A]" />
+        {/* Background with Subtle Glow */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0F0F12] to-[#14141A]" />
 
-  {/* Glass Morphism Floating Effect */}
-  <div className="absolute inset-0 bg-white/5 backdrop-blur-md z-10" />
+        {/* Glass Morphism Floating Effect */}
+        <div className="absolute inset-0 bg-white/5 backdrop-blur-md z-10" />
 
-  {/* Floating Neon Element */}
-  <div className="absolute right-10 top-20 w-72 h-72 rounded-full bg-[#9C84F6] opacity-20 blur-3xl" />
+        {/* Floating Neon Element */}
+        <div className="absolute right-10 top-20 w-72 h-72 rounded-full bg-[#9C84F6] opacity-20 blur-3xl" />
 
-  {/* Content */}
-  <div className="relative z-20 mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center max-w-7xl">
-    <motion.div
-      className="w-full text-center md:text-left"
-      initial="hidden"
-      animate="visible"
-      variants={staggerContainer}
-    >
-      {/* Headline */}
-      <motion.h1
-        className="text-4xl font-inter sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 md:mb-8"
-        variants={fadeInUp}
-      >
-        <span className="block">Western Intercontinental Bank</span>
-        <span className="text-[#9C84F6]">
-          Reimagined
-        </span>{" "}
-        <span className="block sm:inline">for the Digital Age</span>
-      </motion.h1>
-
-      {/* Subtitle */}
-      <motion.p
-        className="text-lg sm:text-xl md:text-2xl text-white/80 mb-8 md:mb-12 max-w-2xl mx-auto md:mx-0"
-        variants={fadeInUp}
-      >
-        Experience seamless, secure, and innovative banking solutions designed
-        for our increasingly connected world.
-      </motion.p>
-
-      {/* Call-to-Action Buttons */}
-      <motion.div
-        className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center md:justify-start"
-        variants={fadeInUp}
-      >
-        {/* <Link href="/register" className="w-full sm:w-auto">
-          <Button
-          
-            className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-3 rounded-[18px] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-[#] text-white"
+        {/* Content */}
+        <div className="relative z-20 mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center max-w-7xl">
+          <motion.div
+            className="w-full text-center md:text-left"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
           >
-            Get Started 
-          </Button>
-        </Link> */}
-        <Link href="/login" className="w-full sm:w-auto">
-          <Button
-            variant="tertiary, primary, secondary"
-            className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-3 rounded-[18px] border border-primary-500 hover:border-primary-500 bg-tertiary hover:bg-primary-600 text-white transition-all duration-300"
-          >
-            Customer Login
-          </Button>
-        </Link>
-      </motion.div>
-    </motion.div>
-    <ParticleBackground />
-    <ParticleBackground />
-    <ParticleBackground />
-  </div>
-</section>
+            {/* Headline */}
+            <motion.h1
+              className="text-4xl font-inter sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 md:mb-8"
+              variants={fadeInUp}
+            >
+              <span className="block">Western Intercontinental Bank</span>
+              <span className="text-[#9C84F6]">Reimagined</span>{" "}
+              <span className="block sm:inline">for the Digital Age</span>
+            </motion.h1>
 
+            {/* Subtitle */}
+            <motion.p
+              className="text-lg sm:text-xl md:text-2xl text-white/80 mb-8 md:mb-12 max-w-2xl mx-auto md:mx-0"
+              variants={fadeInUp}
+            >
+              Experience seamless, secure, and innovative banking solutions
+              designed for our increasingly connected world.
+            </motion.p>
 
+            {/* Call-to-Action Buttons */}
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center md:justify-start"
+              variants={fadeInUp}
+            >
+              {/* <Link href="/register" className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-3 rounded-[18px] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-[#] text-white">
+                  Get Started
+                </Button>
+              </Link> */}
+              <Link href="/login" className="w-full sm:w-auto">
+                <Button
+                  variant="tertiary, primary, secondary"
+                  className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-3 rounded-[18px] border border-primary-500 hover:border-primary-500 bg-tertiary hover:bg-primary-600 text-white transition-all duration-300"
+                >
+                  Customer Login
+                </Button>
+              </Link>
+            </motion.div>
+          </motion.div>
+          <ParticleBackground />
+          <ParticleBackground />
+          <ParticleBackground />
+        </div>
+      </section>
 
       {/* Features Section with Animated Cards */}
       <section className="py-24 bg-white border-2">
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-20"
@@ -216,7 +211,8 @@ export default function Home() {
                 Comprehensive Digital Services
               </h2>
               <p className="mt-3 text-xl text-zinc-600 max-w-3xl mx-auto">
-                Everything you need for modern banking, all in one platform for you !!
+                Everything you need for modern banking, all in one platform for
+                you !!
               </p>
             </div>
 
@@ -920,7 +916,6 @@ function MobileBankingAnimation() {
     </section>
   );
 }
-
 
 // World Map Animation Component
 function WorldMapAnimation() {
