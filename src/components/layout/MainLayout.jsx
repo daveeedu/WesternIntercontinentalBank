@@ -29,9 +29,7 @@ const MainLayout = ({ children }) => {
     <div className="min-h-screen flex flex-col">
       {!isAuthPage && <Navbar />}
 
-      <main className="flex-grow ">{children}
-      <FloatingCustomerCareButton />
-      </main>
+      <main className="flex-grow ">{children}</main>
 
       {!isAuthPage && <Footer />}
     </div>

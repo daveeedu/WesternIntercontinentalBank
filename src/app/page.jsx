@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
 import Button from "../components/ui/Button";
+import AnonymousFloatingButton from "../components/layout/AnonymousCustomerCareModal";
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
@@ -51,6 +52,7 @@ export default function Home() {
 
   return (
     <MainLayout>
+      <AnonymousFloatingButton/>
       {/* Hero Section with Advanced Parallax and Glass Morphism */}
       <section className="relative h-screen overflow-hidden bg-[#0C0C0E]">
   {/* Background with Subtle Glow */}

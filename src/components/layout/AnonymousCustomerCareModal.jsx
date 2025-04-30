@@ -4,15 +4,27 @@ import { MessageCircle, X, Send, HelpCircle } from "lucide-react";
 import io from "socket.io-client";
 import axios from "axios";
 
-const CustomerCareModal = ({ isOpen, onClose }) => {
+const AnonymousCustomerCareModal = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [connectionStatus, setConnectionStatus] = useState("disconnected"); // 'disconnected', 'connecting', 'connected', 'error'
-  const [user, setUser] = useState(null);
-  const [currentThread, setCurrentThread] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState("disconnected");
+  const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const retryTimeoutRef = useRef(null);
+
+  // Generate or retrieve session ID
+  const getSessionId = () => {
+    if (typeof window !== "undefined") {
+      let session = localStorage.getItem("anonChatSession");
+      if (!session) {
+        session = "anon_" + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem("anonChatSession", session);
+      }
+      return session;
+    }
+    return null;
+  };
 
   // Cleanup on unmount
   useEffect(() => {
@@ -31,23 +43,16 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (!isOpen) return;
 
+    const session = getSessionId();
+    setSessionId(session);
+
     const initializeChat = async () => {
       try {
-        // 1. Get user data
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("No authentication token");
+        // Setup socket connection
+        setupSocketConnection(session);
 
-        const userRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_SERVER_NAME}user`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setUser(userRes.data.user);
-
-        // 2. Setup socket connection
-        setupSocketConnection(userRes.data.user._id, token);
-
-        // 3. Load or create thread
-        await loadOrCreateThread(userRes.data.user._id, token);
+        // Load existing messages
+        await loadMessages(session);
       } catch (error) {
         console.error("Initialization error:", error);
         setConnectionStatus("error");
@@ -63,47 +68,58 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
       }
     };
   }, [isOpen]);
+// Updated setupSocketConnection function in AnonymousCustomerCareModal
+const setupSocketConnection = (session) => {
+  setConnectionStatus("connecting");
 
-  const setupSocketConnection = (userId, token) => {
-    setConnectionStatus("connecting");
+  if (socketRef.current) {
+    socketRef.current.disconnect();
+  }
 
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-    }
+  const socket = io(process.env.NEXT_PUBLIC_SOCKET_SERVER, {
+    query: { sessionId: session, isAnonymous: true },
+    reconnectionAttempts: 3,
+    reconnectionDelay: 1000,
+    timeout: 5000,
+  });
 
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_SERVER, {
-      auth: { token, userId, role: "user" },
-      reconnectionAttempts: 3,
-      reconnectionDelay: 1000,
-      timeout: 5000,
+  socketRef.current = socket;
+
+  socket.on("connect", () => {
+    setConnectionStatus("connected");
+    socket.emit("join", { sessionId: session });
+    
+    // Make sure to join the anonymous room for this session
+    socket.emit("join", { room: `anon_${session}` });
+  });
+
+  socket.on("disconnect", () => {
+    setConnectionStatus("disconnected");
+  });
+
+  socket.on("connect_error", (err) => {
+    console.error("Socket connection error:", err);
+    setConnectionStatus("error");
+    attemptReconnect(session);
+  });
+
+  socket.on("receiveMessage", (message) => {
+    console.log("Received message:", message);
+    setMessages((prev) => {
+      // Check if we already have this message (either by ID or content+timestamp match)
+      const isDuplicate = prev.some(
+        m => m._id === message._id || 
+            (m.content === message.content && 
+             Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 1000)
+      );
+      
+      // Only add if not a duplicate
+      return isDuplicate ? prev : [...prev, message];
     });
+  });
+};
 
-    socketRef.current = socket;
-
-    socket.on("connect", () => {
-      setConnectionStatus("connected");
-      console.log("Socket connected");
-    });
-
-    socket.on("disconnect", () => {
-      setConnectionStatus("disconnected");
-      console.log("Socket disconnected");
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("Socket connection error:", err);
-      setConnectionStatus("error");
-      attemptReconnect(userId, token);
-    });
-
-    socket.on("chat-message", (message) => {
-      if (message.threadId === currentThread?._id) {
-        setMessages((prev) => [...prev, message]);
-      }
-    });
-  };
-
-  const attemptReconnect = (userId, token) => {
+  const attemptReconnect = (session) => {
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current);
     }
@@ -111,71 +127,36 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
     retryTimeoutRef.current = setTimeout(() => {
       if (connectionStatus !== "connected" && isOpen) {
         console.log("Attempting to reconnect...");
-        setupSocketConnection(userId, token);
+        setupSocketConnection(session);
       }
     }, 3000);
   };
 
-  const loadOrCreateThread = async (userId, token) => {
+  const loadMessages = async (session) => {
     try {
-      // Try to load existing threads first
-      const threadsRes = await axios.get(
-        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/user/${userId}/threads`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_SERVER_NAME}anonymous/${session}`,
+        {
+          headers: {
+            "X-Anon-Session": session, 
+          },
+        }
       );
-
-      if (threadsRes.data.length > 0) {
-        const thread = threadsRes.data[0];
-        setCurrentThread(thread);
-        await loadThreadMessages(thread._id, token);
-        return;
-      }
-
-      // Create new thread if none exists
-      const newThreadRes = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/user/${userId}/thread`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setCurrentThread(newThreadRes.data);
-      setMessages([]);
-    } catch (error) {
-      console.error("Thread error:", error);
-      // Fallback to client-side only thread
-      setCurrentThread({
-        _id: `temp-${userId}-${Date.now()}`,
-        userId,
-        createdAt: new Date(),
-      });
-      setMessages([]);
-    }
-  };
-
-  const loadThreadMessages = async (threadId, token) => {
-    try {
-      const messagesRes = await axios.get(
-        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/thread/${threadId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessages(messagesRes.data);
+      setMessages(response.data);
     } catch (error) {
       console.error("Failed to load messages:", error);
-      setMessages([]);
     }
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !user?._id || !currentThread) return;
+    if (!newMessage.trim() || !sessionId) return;
 
     const message = {
       _id: Date.now().toString(),
-      sender: user._id,
-      senderModel: "User",
+      sessionId,
       content: newMessage,
       timestamp: new Date(),
-      read: false,
-      threadId: currentThread._id,
+      isSupport: false,
     };
 
     // Optimistic update
@@ -183,28 +164,19 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
     setNewMessage("");
 
     try {
-      // Only send to server if not a temporary thread
-      if (!currentThread._id.startsWith("temp-")) {
-        const token = localStorage.getItem("token");
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/user/${user._id}/send`,
-          { content: newMessage, threadId: currentThread._id },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+      // Save to database
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_SERVER_NAME}anonymous/${sessionId}/send`,
+        { content: newMessage }
+      );
 
-        // Update with server response
-        setMessages((prev) => [
-          ...prev.filter((m) => m._id !== message._id),
-          response.data,
-        ]);
-
-        // Emit via socket if connected
-        if (socketRef.current?.connected) {
-          socketRef.current.emit("send-message", {
-            ...response.data,
-            receiver: "propeneers",
-          });
-        }
+      // Emit via socket if connected
+      if (socketRef.current?.connected) {
+        socketRef.current.emit("sendMessage", {
+          sessionId,
+          message: newMessage,
+          receiverId: "propeneers",
+        });
       }
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -265,10 +237,6 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
                 </p>
               </div>
             </div>
-          ) : !currentThread ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
-            </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
               <MessageCircle size={48} className="mb-4 text-gray-300" />
@@ -282,12 +250,12 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
               <div
                 key={message._id}
                 className={`flex ${
-                  message.sender._id === user._id ? "justify-end" : "justify-start"
+                  !message.isSupport ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
                   className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
-                    message.sender._id === user._id
+                    !message.isSupport
                       ? "bg-primary-600 text-white"
                       : "bg-gray-100 text-gray-800"
                   }`}
@@ -296,7 +264,7 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
                   <div className="flex items-center justify-end mt-1 space-x-2">
                     <p
                       className={`text-xs ${
-                        message.sender._id === user._id
+                        !message.isSupport
                           ? "text-primary-100"
                           : "text-gray-500"
                       }`}
@@ -306,11 +274,6 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
                         minute: "2-digit",
                       })}
                     </p>
-                    { message.sender._id === user._id && (
-                      <span className="text-xs">
-                        {message.read ? "✓✓" : "✓"}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -333,11 +296,11 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
               }}
               placeholder="Type your message..."
               className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              disabled={!currentThread}
+              disabled={connectionStatus === "error"}
             />
             <button
               onClick={handleSendMessage}
-              disabled={!newMessage.trim() || !currentThread}
+              disabled={!newMessage.trim() || connectionStatus === "error"}
               className="p-2 rounded-full bg-primary-600 text-white hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               <Send size={20} />
@@ -349,63 +312,35 @@ const CustomerCareModal = ({ isOpen, onClose }) => {
   );
 };
 
-const FloatingCustomerCareButton = () => {
+const AnonymousFloatingButton = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [user, setUser] = useState(null);
   const socketRef = useRef(null);
-
-  // Fetch user data on mount
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_SERVER_NAME}user`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setUser(response.data.user);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-
-    fetchUserData();
-  }, []);
 
   // Listen for new messages when chat is closed
   useEffect(() => {
-    if (!user?._id) return;
+    if (!isModalOpen) {
+      const session = localStorage.getItem("anonChatSession");
+      if (!session) return;
 
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_SERVER, {
-      auth: {
-        token: localStorage.getItem("token"),
-        userId: user._id,
-        role: "user",
-      },
-    });
+      const socket = io(process.env.NEXT_PUBLIC_SOCKET_SERVER, {
+        query: { sessionId: session, isAnonymous: true },
+      });
 
-    socketRef.current = socket;
+      socketRef.current = socket;
 
-    const handleNewMessage = (message) => {
-      if (!isModalOpen && message.sender !== user._id) {
-        setUnreadCount((prev) => prev + 1);
-      }
-    };
+      socket.on("receiveMessage", (message) => {
+        if (message.isSupport) {
+          setUnreadCount((prev) => prev + 1);
+        }
+      });
 
-    socket.on("chat-message", handleNewMessage);
-
-    return () => {
-      socket.off("chat-message", handleNewMessage);
-      socket.disconnect();
-    };
-  }, [user, isModalOpen]);
+      return () => {
+        socket.off("receiveMessage");
+        socket.disconnect();
+      };
+    }
+  }, [isModalOpen]);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -433,9 +368,9 @@ const FloatingCustomerCareButton = () => {
         </button>
       </div>
 
-      <CustomerCareModal isOpen={isModalOpen} onClose={closeModal} />
+      <AnonymousCustomerCareModal isOpen={isModalOpen} onClose={closeModal} />
     </>
   );
 };
 
-export { FloatingCustomerCareButton };
+export default AnonymousFloatingButton;

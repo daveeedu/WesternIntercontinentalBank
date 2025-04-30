@@ -45,20 +45,38 @@ const PropeneerChatDashboard = () => {
   );
 
   // Fetch all threads
+
   const fetchThreads = async () => {
+    const token = localStorage.getItem("adminToken");
     try {
-      const token = localStorage.getItem("adminToken");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/propeneer/threads`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/propeneer/threads`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
-      setThreads(response.data);
-      if (!selectedThread && response.data.length > 0) {
-        setSelectedThread(response.data[0]);
-      }
+
+      console.log("Fetched threads:", response.data);
+      const anonymousResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/anonymous/threads`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log("Fetched anonymous threads:", anonymousResponse.data);
+
+      setThreads([
+        ...response.data,
+        ...anonymousResponse.data.map((thread) => ({
+          ...thread,
+          isAnonymous: true,
+          user: {
+            firstName: "Anonymous",
+            lastName: `User (${thread.sessionId.slice(0, 6)})`,
+          },
+        })),
+      ]);
     } catch (error) {
       console.error("Error fetching threads:", error);
-    } finally {
+    }finally{
       setLoadingThreads(false);
     }
   };
@@ -198,50 +216,76 @@ const PropeneerChatDashboard = () => {
   }, [messages]);
 
   // Handle sending a new message
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedThread) return;
 
-    const optimisticId = Date.now().toString();
-    const optimisticMessage = {
-      _id: optimisticId,
-      sender: "propeneer",
-      senderModel: "Propeneer",
-      content: newMessage,
-      timestamp: new Date(),
-      read: false,
-      threadId: selectedThread._id,
-    };
+const handleSendMessage = async () => {
+  if (!newMessage.trim() || !selectedThread) return;
 
-    // Optimistic update
-    setMessages((prev) => [...prev, optimisticMessage]);
-    setNewMessage("");
+  const optimisticId = Date.now().toString();
+  const optimisticMessage = {
+    _id: optimisticId,
+    sender: "propeneer",
+    senderModel: "Propeneer",
+    content: newMessage,
+    timestamp: new Date(),
+    read: false,
+    threadId: selectedThread._id,
+    isSupport: true, // Mark as support message
+  };
 
-    try {
-      const token = localStorage.getItem("adminToken"); // Regular token, not adminToken
-      const response = await axios.post(
+  // Optimistic update
+  setMessages((prev) => [...prev, optimisticMessage]);
+  setNewMessage("");
+
+  try {
+    const token = localStorage.getItem("adminToken");
+    let response;
+
+    // Check if we're replying to an anonymous user or a regular user
+    if (selectedThread.isAnonymous) {
+      // Use sessionId for anonymous users
+      response = await axios.post(
+        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/propeneer/reply/anonymous/${selectedThread.sessionId}`,
+        {
+          content: newMessage,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } else {
+      // Regular user
+      response = await axios.post(
         `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/propeneer/reply/${selectedThread._id}`,
         {
           content: newMessage,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+    }
 
-      // Replace optimistic message with server response
-      setMessages((prev) => [
-        ...prev.filter((m) => m._id !== optimisticId),
-        response.data,
-      ]);
+    // Replace optimistic message with server response
+    setMessages((prev) => [
+      ...prev.filter((m) => m._id !== optimisticId),
+      response.data,
+    ]);
 
-      // Emit via socket if connected
-      if (socketRef.current?.connected) {
+    // Emit via socket if connected
+    if (socketRef.current?.connected) {
+      // For anonymous users, we need to use a special event
+      if (selectedThread.isAnonymous) {
+        socketRef.current.emit("sendMessage", {
+          sessionId: selectedThread.sessionId,
+          message: newMessage,
+          receiverId: selectedThread.sessionId,
+        });
+      } else {
         socketRef.current.emit("send-message", response.data);
       }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      // Remove optimistic message on error
-      setMessages((prev) => prev.filter((m) => m._id !== optimisticId));
     }
-  };
+  } catch (error) {
+    console.error("Error sending message:", error);
+    // Remove optimistic message on error
+    setMessages((prev) => prev.filter((m) => m._id !== optimisticId));
+  }
+};
 
   // Handle typing indicator
   const handleInputChange = (e) => {
@@ -275,239 +319,240 @@ const PropeneerChatDashboard = () => {
 
   return (
     <PropeneerLayout>
-
-    <div className="flex h-screen bg-gray-50">
-      {/* Threads sidebar */}
-      <div
-        className={`${
-          mobileThreadsOpen ? "block" : "hidden"
-        } md:block w-full md:w-80 bg-white border-r border-gray-200`}
-      >
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-            <Users className="mr-2 text-primary-600" size={20} />
-            Customer Threads
-          </h2>
-          <button
-            onClick={() => setMobileThreadsOpen(false)}
-            className="md:hidden text-gray-500 hover:text-gray-700"
-          >
-            <ChevronLeft size={20} />
-          </button>
-        </div>
-
-        {/* Search bar */}
-        <div className="p-4 border-b">
-          <input
-            type="text"
-            placeholder="Search threads..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-
-        {loadingThreads ? (
-          <div className="flex justify-center items-center h-3/4">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
-          </div>
-        ) : filteredThreads.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            {searchTerm ? "No matching threads" : "No active threads"}
-          </div>
-        ) : (
-          <div className="overflow-y-auto h-[calc(100vh-130px)]">
-            {filteredThreads.map((thread) => (
-              <div
-                key={thread._id}
-                onClick={() => {
-                  setSelectedThread(thread);
-                  setMobileThreadsOpen(false);
-                }}
-                className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${
-                  selectedThread?._id === thread._id ? "bg-blue-50" : ""
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 truncate">
-                      {thread.user?.firstName} {thread.user?.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-500 truncate">
-                      {thread.lastMessage?.content}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end ml-2">
-                    <span className="text-xs text-gray-400 whitespace-nowrap">
-                      {formatDate(thread.lastMessage?.timestamp)}
-                    </span>
-                    <span className="text-xs text-gray-400 whitespace-nowrap">
-                      {formatTime(thread.lastMessage?.timestamp)}
-                    </span>
-                    {thread.unreadCount > 0 && (
-                      <span className="mt-1 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {thread.unreadCount}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Main chat area */}
-      <div
-        className={`${
-          !mobileThreadsOpen ? "block" : "hidden"
-        } md:block flex-1 flex flex-col`}
-      >
-        {selectedThread ? (
-          <>
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white">
-              <div className="flex items-center">
-                <button
-                  onClick={() => setMobileThreadsOpen(true)}
-                  className="mr-2 md:hidden text-gray-500 hover:text-gray-700"
-                >
-                  <ChevronRight size={20} />
-                </button>
-                <div>
-                  <h2 className="font-semibold text-gray-900">
-                    {selectedThread.user?.firstName}{" "}
-                    {selectedThread.user?.lastName}
-                  </h2>
-                  <p className="text-xs text-gray-500">
-                    {selectedThread.user?.email}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center">
-                  <span
-                    className={`h-2 w-2 rounded-full mr-2 ${
-                      connectionStatus === "connected"
-                        ? "bg-green-500"
-                        : connectionStatus === "connecting"
-                        ? "bg-yellow-500"
-                        : "bg-red-500"
-                    }`}
-                  />
-                  <span className="text-xs text-gray-500">
-                    {connectionStatus === "connected"
-                      ? "Online"
-                      : connectionStatus === "connecting"
-                      ? "Connecting..."
-                      : "Offline"}
-                  </span>
-                </div>
-                {isTyping && (
-                  <div className="text-xs text-gray-500 flex items-center">
-                    <span className="animate-pulse">Typing...</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-              {loadingMessages ? (
-                <div className="flex justify-center items-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-                  <MessageCircle size={48} className="mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium">No messages yet</h3>
-                  <p className="text-sm">Start the conversation</p>
-                </div>
-              ) : (
-                messages.map((message) => (
-                  <div
-                    key={message._id}
-                    className={`flex mb-4 ${
-                      message.senderModel === "Propeneer"
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
-                        message.senderModel === "Propeneer"
-                          ? "bg-primary-600 text-white"
-                          : "bg-white border border-gray-200 text-gray-800"
-                      }`}
-                    >
-                      <p>{message.content}</p>
-                      <div className="flex items-center justify-end mt-1 space-x-2">
-                        <p
-                          className={`text-xs ${
-                            message.senderModel === "Propeneer"
-                              ? "text-primary-100"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {formatTime(message.timestamp)}
-                        </p>
-                        {message.senderModel === "Propeneer" && (
-                          <span className="text-xs">
-                            {message.read ? (
-                              <CheckCircle
-                                size={12}
-                                className="text-blue-300"
-                              />
-                            ) : (
-                              <Clock size={12} className="text-gray-300" />
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="p-4 border-t border-gray-200 bg-white">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={handleInputChange}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Type your message..."
-                  className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  disabled={connectionStatus !== "connected"}
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={
-                    !newMessage.trim() || connectionStatus !== "connected"
-                  }
-                  className="p-2 rounded-full bg-primary-600 text-white hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  <Send size={20} />
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <MessageCircle size={48} className="mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium">Select a thread</h3>
-            <p className="text-sm">Choose a conversation from the sidebar</p>
+      <div className="flex h-screen bg-gray-50">
+        {/* Threads sidebar */}
+        <div
+          className={`${
+            mobileThreadsOpen ? "block" : "hidden"
+          } md:block w-full md:w-80 bg-white border-r border-gray-200`}
+        >
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+              <Users className="mr-2 text-primary-600" size={20} />
+              Customer Threads
+            </h2>
             <button
-              onClick={() => setMobileThreadsOpen(true)}
-              className="mt-4 md:hidden flex items-center text-primary-600"
+              onClick={() => setMobileThreadsOpen(false)}
+              className="md:hidden text-gray-500 hover:text-gray-700"
             >
-              <ChevronRight className="mr-1" size={16} />
-              Show threads
+              <ChevronLeft size={20} />
             </button>
           </div>
-        )}
+
+          {/* Search bar */}
+          <div className="p-4 border-b">
+            <input
+              type="text"
+              placeholder="Search threads..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          {loadingThreads ? (
+            <div className="flex justify-center items-center h-3/4">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
+            </div>
+          ) : filteredThreads.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              {searchTerm ? "No matching threads" : "No active threads"}
+            </div>
+          ) : (
+            <div className="overflow-y-auto h-[calc(100vh-130px)]">
+              {filteredThreads.map((thread) => (
+                <div
+                  key={thread._id || thread.sessionId}
+                  onClick={() => {
+                    setSelectedThread(thread);
+                    setMobileThreadsOpen(false);
+                  }}
+                  className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${
+                    selectedThread?._id === thread._id || selectedThread?._id === thread.sessionId ? "bg-blue-50" : ""
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <h3>
+                        {thread.isAnonymous
+                          ? `Anonymous User (${thread.sessionId.slice(0, 6)})`
+                          : `${thread.user?.firstName} ${thread.user?.lastName}`}
+                      </h3>
+                      <p className="text-sm text-gray-500 truncate">
+                        {thread.lastMessage?.content}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end ml-2">
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
+                        {formatDate(thread.lastMessage?.timestamp)}
+                      </span>
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
+                        {formatTime(thread.lastMessage?.timestamp)}
+                      </span>
+                      {thread.unreadCount > 0 && (
+                        <span className="mt-1 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          {thread.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Main chat area */}
+        <div
+          className={`${
+            !mobileThreadsOpen ? "block" : "hidden"
+          } md:block flex-1 flex flex-col`}
+        >
+          {selectedThread ? (
+            <>
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white">
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setMobileThreadsOpen(true)}
+                    className="mr-2 md:hidden text-gray-500 hover:text-gray-700"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                  <div>
+                    <h2 className="font-semibold text-gray-900">
+                      {selectedThread.user?.firstName}{" "}
+                      {selectedThread.user?.lastName}
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      {selectedThread.user?.email}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <span
+                      className={`h-2 w-2 rounded-full mr-2 ${
+                        connectionStatus === "connected"
+                          ? "bg-green-500"
+                          : connectionStatus === "connecting"
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      }`}
+                    />
+                    <span className="text-xs text-gray-500">
+                      {connectionStatus === "connected"
+                        ? "Online"
+                        : connectionStatus === "connecting"
+                        ? "Connecting..."
+                        : "Offline"}
+                    </span>
+                  </div>
+                  {isTyping && (
+                    <div className="text-xs text-gray-500 flex items-center">
+                      <span className="animate-pulse">Typing...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                {loadingMessages ? (
+                  <div className="flex justify-center items-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                    <MessageCircle size={48} className="mb-4 text-gray-300" />
+                    <h3 className="text-lg font-medium">No messages yet</h3>
+                    <p className="text-sm">Start the conversation</p>
+                  </div>
+                ) : (
+                  messages.map((message) => (
+                    <div
+                      key={message._id}
+                      className={`flex mb-4 ${
+                        message.senderModel === "Propeneer"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
+                          message.senderModel === "Propeneer"
+                            ? "bg-primary-600 text-white"
+                            : "bg-white border border-gray-200 text-gray-800"
+                        }`}
+                      >
+                        <p>{message.content}</p>
+                        <div className="flex items-center justify-end mt-1 space-x-2">
+                          <p
+                            className={`text-xs ${
+                              message.senderModel === "Propeneer"
+                                ? "text-primary-100"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {formatTime(message.timestamp)}
+                          </p>
+                          {message.senderModel === "Propeneer" && (
+                            <span className="text-xs">
+                              {message.read ? (
+                                <CheckCircle
+                                  size={12}
+                                  className="text-blue-300"
+                                />
+                              ) : (
+                                <Clock size={12} className="text-gray-300" />
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="p-4 border-t border-gray-200 bg-white">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={handleInputChange}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type your message..."
+                    className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    disabled={connectionStatus !== "connected"}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={
+                      !newMessage.trim() || connectionStatus !== "connected"
+                    }
+                    className="p-2 rounded-full bg-primary-600 text-white hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    <Send size={20} />
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+              <MessageCircle size={48} className="mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium">Select a thread</h3>
+              <p className="text-sm">Choose a conversation from the sidebar</p>
+              <button
+                onClick={() => setMobileThreadsOpen(true)}
+                className="mt-4 md:hidden flex items-center text-primary-600"
+              >
+                <ChevronRight className="mr-1" size={16} />
+                Show threads
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </PropeneerLayout>
   );
 };

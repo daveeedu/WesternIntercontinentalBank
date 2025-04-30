@@ -9,6 +9,7 @@ import MainLayout from "../../components/layout/MainLayout";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import axios from "axios";
+import AnonymousFloatingButton from "../../components/layout/AnonymousCustomerCareModal";
 
 function LoginForm() {
   const router = useRouter();
@@ -63,6 +64,7 @@ function LoginForm() {
 
   return (
     <MainLayout>
+      <AnonymousFloatingButton/>
       <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center flex flex-col items-center justify-center">
