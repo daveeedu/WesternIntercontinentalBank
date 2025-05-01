@@ -262,10 +262,10 @@ const handleSendMessage = async () => {
     // }
 
     // Replace optimistic message with server response
-    setMessages((prev) => [
-      ...prev.filter((m) => m._id !== optimisticId),
-      response.data,
-    ]);
+    // setMessages((prev) => [
+    //   ...prev.filter((m) => m._id !== optimisticId),
+    //   response?.data,
+    // ]);
 
     // Emit via socket if connected
     if (socketRef.current?.connected) {
