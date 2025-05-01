@@ -241,31 +241,31 @@ const handleSendMessage = async () => {
     let response;
 
     // Check if we're replying to an anonymous user or a regular user
-    if (selectedThread.isAnonymous) {
-      // Use sessionId for anonymous users
-      response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/propeneer/reply/anonymous/${selectedThread.sessionId}`,
-        {
-          content: newMessage,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-    } else {
-      // Regular user
-      response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/propeneer/reply/${selectedThread._id}`,
-        {
-          content: newMessage,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-    }
+    // if (selectedThread.isAnonymous) {
+    //   // Use sessionId for anonymous users
+    //   response = await axios.post(
+    //     `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/propeneer/reply/anonymous/${selectedThread.sessionId}`,
+    //     {
+    //       content: newMessage,
+    //     },
+    //     { headers: { Authorization: `Bearer ${token}` } }
+    //   );
+    // } else {
+    //   // Regular user
+    //   response = await axios.post(
+    //     `${process.env.NEXT_PUBLIC_SERVER_NAME}chat/propeneer/reply/${selectedThread._id}`,
+    //     {
+    //       content: newMessage,
+    //     },
+    //     { headers: { Authorization: `Bearer ${token}` } }
+    //   );
+    // }
 
     // Replace optimistic message with server response
-    setMessages((prev) => [
-      ...prev.filter((m) => m._id !== optimisticId),
-      response.data,
-    ]);
+    // setMessages((prev) => [
+    //   ...prev.filter((m) => m._id !== optimisticId),
+    //   response?.data,
+    // ]);
 
     // Emit via socket if connected
     if (socketRef.current?.connected) {
